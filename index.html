@@ -36,6 +36,14 @@
             overflow-x: hidden;
             overflow-y: visible !important;
         }
+        
+        /* Truncate long remarks in table */
+        .truncate-remark {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
@@ -100,7 +108,9 @@
                             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company & Role</th>
                             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date Applied</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">HR Contact</th>
                             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Salary</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Remark</th>
                             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -163,6 +173,11 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="hr">HR Contact / Recruiter</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="hr" type="text" placeholder="e.g. Jane Doe (jane@company.com)">
+                    </div>
+
+                    <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="salary">Salary Range</label>
                         <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="salary" type="text" placeholder="e.g. $80k - $100k">
                     </div>
@@ -170,6 +185,11 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="link">Job Link</label>
                         <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="link" type="url" placeholder="https://...">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="remark">Remark / Notes</label>
+                        <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="remark" rows="2" placeholder="e.g. Follow up next week, technical interview went well..."></textarea>
                     </div>
 
                     <div class="flex justify-end pt-2">
@@ -183,12 +203,12 @@
 
     <script>
         // --- State Management ---
-        // We initialize with some dummy data for demonstration
+        // Added 'remark' field to the dummy data
         let jobs = [
-            { id: 1, company: "Tech Solutions Inc.", role: "Frontend Developer", status: "Interviewing", date: "2023-10-15", salary: "$90k", link: "#" },
-            { id: 2, company: "Creative Agency", role: "UX Designer", status: "Applied", date: "2023-10-18", salary: "$85k", link: "#" },
-            { id: 3, company: "StartUp X", role: "Full Stack Engineer", status: "To Apply", date: "", salary: "$110k", link: "#" },
-            { id: 4, company: "Big Corp", role: "Project Manager", status: "Rejected", date: "2023-09-20", salary: "Competitive", link: "#" }
+            { id: 1, company: "Tech Solutions Inc.", role: "Frontend Developer", status: "Interviewing", date: "2023-10-15", hr: "Sarah Smith", salary: "$90k", link: "#", remark: "2nd round technical interview on Friday." },
+            { id: 2, company: "Creative Agency", role: "UX Designer", status: "Applied", date: "2023-10-18", hr: "john.doe@creative.com", salary: "$85k", link: "#", remark: "Referred by Alex." },
+            { id: 3, company: "StartUp X", role: "Full Stack Engineer", status: "To Apply", date: "", hr: "", salary: "$110k", link: "#", remark: "Need to update portfolio before applying." },
+            { id: 4, company: "Big Corp", role: "Project Manager", status: "Rejected", date: "2023-09-20", hr: "Mike Johnson", salary: "Competitive", link: "#", remark: "Position was filled internally." }
         ];
 
         // --- DOM Elements ---
@@ -250,7 +270,13 @@
                             <p class="text-gray-900 whitespace-no-wrap">${job.date || '<span class="text-gray-400">-</span>'}</p>
                         </td>
                         <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <p class="text-gray-900 whitespace-no-wrap">${job.hr || '<span class="text-gray-400">-</span>'}</p>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                             <p class="text-gray-900 whitespace-no-wrap">${job.salary || '<span class="text-gray-400">-</span>'}</p>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <p class="text-gray-900 truncate-remark" title="${job.remark || ''}">${job.remark || '<span class="text-gray-400">-</span>'}</p>
                         </td>
                         <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                             <button onclick="editJob(${job.id})" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
@@ -321,20 +347,22 @@
             const role = document.getElementById('role').value;
             const status = document.getElementById('status').value;
             const date = document.getElementById('date').value;
+            const hr = document.getElementById('hr').value;
             const salary = document.getElementById('salary').value;
             const link = document.getElementById('link').value;
+            const remark = document.getElementById('remark').value;
 
             if (id) {
                 // Edit existing
                 const index = jobs.findIndex(j => j.id == id);
                 if (index !== -1) {
-                    jobs[index] = { ...jobs[index], company, role, status, date, salary, link };
+                    jobs[index] = { ...jobs[index], company, role, status, date, hr, salary, link, remark };
                 }
             } else {
                 // Add new
                 const newJob = {
                     id: Date.now(), // simple unique id
-                    company, role, status, date, salary, link
+                    company, role, status, date, hr, salary, link, remark
                 };
                 jobs.unshift(newJob); // Add to top
             }
@@ -354,8 +382,10 @@
             document.getElementById('role').value = job.role;
             document.getElementById('status').value = job.status;
             document.getElementById('date').value = job.date;
-            document.getElementById('salary').value = job.salary;
-            document.getElementById('link').value = job.link;
+            document.getElementById('hr').value = job.hr || '';
+            document.getElementById('salary').value = job.salary || '';
+            document.getElementById('link').value = job.link || '';
+            document.getElementById('remark').value = job.remark || '';
 
             openModal(true);
         }
