@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom Scrollbar for the table container */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        /* Modal Animation */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-md p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold"><i class="fas fa-briefcase mr-2"></i>Job Tracker</h1>
+            <button onclick="openModal()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition shadow-sm text-sm md:text-base">
+                <i class="fas fa-plus mr-1"></i> Add Job
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow flex flex-col">
+        
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+                <p class="text-gray-500 text-xs uppercase font-bold">Total</p>
+                <p class="text-2xl font-bold" id="stat-total">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                <p class="text-gray-500 text-xs uppercase font-bold">Applied</p>
+                <p class="text-2xl font-bold" id="stat-applied">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
+                <p class="text-gray-500 text-xs uppercase font-bold">Interviewing</p>
+                <p class="text-2xl font-bold" id="stat-interview">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                <p class="text-gray-500 text-xs uppercase font-bold">Offers</p>
+                <p class="text-2xl font-bold" id="stat-offer">0</p>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="relative w-full md:w-1/3">
+                <input type="text" id="searchInput" placeholder="Search company or role..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+            <div class="w-full md:w-auto">
+                <select id="statusFilter" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                    <option value="All">All Statuses</option>
+                    <option value="To Apply">To Apply</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Interviewing">Interviewing</option>
+                    <option value="Offer">Offer</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden flex-grow flex flex-col">
+            <div class="table-container overflow-x-auto flex-grow">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company & Role</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date Applied</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Salary</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobTableBody">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center p-10 text-gray-400">
+                    <i class="fas fa-clipboard-list text-4xl mb-3"></i>
+                    <p>No job applications found.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="jobModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto max-h-[90vh]">
+            
+            <div class="modal-content py-4 text-left px-6">
+                <!-- Title -->
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold text-gray-700" id="modalTitle">Add Job</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeModal()">
+                        <i class="fas fa-times text-gray-500 hover:text-gray-700"></i>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form id="jobForm" onsubmit="handleFormSubmit(event)">
+                    <input type="hidden" id="jobId">
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="company">Company Name</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="company" type="text" required placeholder="e.g. Google">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="role">Job Title</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="role" type="text" required placeholder="e.g. Frontend Dev">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="status">Status</label>
+                            <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white" id="status">
+                                <option value="To Apply">To Apply</option>
+                                <option value="Applied">Applied</option>
+                                <option value="Interviewing">Interviewing</option>
+                                <option value="Offer">Offer</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="date">Date</label>
+                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="date" type="date">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="salary">Salary Range</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="salary" type="text" placeholder="e.g. $80k - $100k">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="link">Job Link</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="link" type="url" placeholder="https://...">
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 bg-gray-200 p-3 rounded-lg text-gray-700 hover:bg-gray-300 mr-2">Cancel</button>
+                        <button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white hover:bg-blue-700">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        // We initialize with some dummy data for demonstration
+        let jobs = [
+            { id: 1, company: "Tech Solutions Inc.", role: "Frontend Developer", status: "Interviewing", date: "2023-10-15", salary: "$90k", link: "#" },
+            { id: 2, company: "Creative Agency", role: "UX Designer", status: "Applied", date: "2023-10-18", salary: "$85k", link: "#" },
+            { id: 3, company: "StartUp X", role: "Full Stack Engineer", status: "To Apply", date: "", salary: "$110k", link: "#" },
+            { id: 4, company: "Big Corp", role: "Project Manager", status: "Rejected", date: "2023-09-20", salary: "Competitive", link: "#" }
+        ];
+
+        // --- DOM Elements ---
+        const tableBody = document.getElementById('jobTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const modal = document.getElementById('jobModal');
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            updateStats();
+        });
+
+        // --- Rendering ---
+        function renderTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterValue = statusFilter.value;
+
+            // Filter data
+            const filteredJobs = jobs.filter(job => {
+                const matchesSearch = job.company.toLowerCase().includes(searchTerm) || job.role.toLowerCase().includes(searchTerm);
+                const matchesStatus = filterValue === 'All' || job.status === filterValue;
+                return matchesSearch && matchesStatus;
+            });
+
+            // Clear table
+            tableBody.innerHTML = '';
+
+            if (filteredJobs.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filteredJobs.forEach(job => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-50 transition";
+                    row.innerHTML = `
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
+                                    ${job.company.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-gray-900 whitespace-no-wrap font-semibold">
+                                        ${job.company}
+                                    </p>
+                                    <p class="text-gray-600 whitespace-no-wrap text-xs">
+                                        ${job.role}
+                                    </p>
+                                    ${job.link ? `<a href="${job.link}" target="_blank" class="text-blue-500 text-xs hover:underline"><i class="fas fa-external-link-alt"></i> View Job</a>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            ${getStatusBadge(job.status)}
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <p class="text-gray-900 whitespace-no-wrap">${job.date || '<span class="text-gray-400">-</span>'}</p>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <p class="text-gray-900 whitespace-no-wrap">${job.salary || '<span class="text-gray-400">-</span>'}</p>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                            <button onclick="editJob(${job.id})" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteJob(${job.id})" class="text-red-600 hover:text-red-900" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        function getStatusBadge(status) {
+            let colorClass = "";
+            switch(status) {
+                case 'Applied': colorClass = "bg-yellow-200 text-yellow-900"; break;
+                case 'Interviewing': colorClass = "bg-purple-200 text-purple-900"; break;
+                case 'Offer': colorClass = "bg-green-200 text-green-900"; break;
+                case 'Rejected': colorClass = "bg-red-200 text-red-900"; break;
+                default: colorClass = "bg-gray-200 text-gray-900"; // To Apply
+            }
+            return `<span class="relative inline-block px-3 py-1 font-semibold leading-tight rounded-full ${colorClass}">
+                        <span class="relative text-xs">${status}</span>
+                    </span>`;
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = jobs.length;
+            document.getElementById('stat-applied').innerText = jobs.filter(j => j.status === 'Applied').length;
+            document.getElementById('stat-interview').innerText = jobs.filter(j => j.status === 'Interviewing').length;
+            document.getElementById('stat-offer').innerText = jobs.filter(j => j.status === 'Offer').length;
+        }
+
+        // --- Event Listeners ---
+        searchInput.addEventListener('input', renderTable);
+        statusFilter.addEventListener('change', renderTable);
+
+        // --- Modal & Form Logic ---
+        function openModal(isEdit = false) {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+            
+            if(!isEdit) {
+                document.getElementById('modalTitle').innerText = "Add Job";
+                document.getElementById('jobForm').reset();
+                document.getElementById('jobId').value = "";
+                // Set default date to today
+                document.getElementById('date').valueAsDate = new Date();
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+        }
+
+        // Close modal when clicking outside
+        modal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('jobId').value;
+            const company = document.getElementById('company').value;
+            const role = document.getElementById('role').value;
+            const status = document.getElementById('status').value;
+            const date = document.getElementById('date').value;
+            const salary = document.getElementById('salary').value;
+            const link = document.getElementById('link').value;
+
+            if (id) {
+                // Edit existing
+                const index = jobs.findIndex(j => j.id == id);
+                if (index !== -1) {
+                    jobs[index] = { ...jobs[index], company, role, status, date, salary, link };
+                }
+            } else {
+                // Add new
+                const newJob = {
+                    id: Date.now(), // simple unique id
+                    company, role, status, date, salary, link
+                };
+                jobs.unshift(newJob); // Add to top
+            }
+
+            closeModal();
+            renderTable();
+            updateStats();
+        }
+
+        function editJob(id) {
+            const job = jobs.find(j => j.id == id);
+            if (!job) return;
+
+            document.getElementById('modalTitle').innerText = "Edit Job";
+            document.getElementById('jobId').value = job.id;
+            document.getElementById('company').value = job.company;
+            document.getElementById('role').value = job.role;
+            document.getElementById('status').value = job.status;
+            document.getElementById('date').value = job.date;
+            document.getElementById('salary').value = job.salary;
+            document.getElementById('link').value = job.link;
+
+            openModal(true);
+        }
+
+        function deleteJob(id) {
+            if(confirm("Are you sure you want to delete this application?")) {
+                jobs = jobs.filter(j => j.id !== id);
+                renderTable();
+                updateStats();
+            }
+        }
+    </script>
+</body>
+</html>
